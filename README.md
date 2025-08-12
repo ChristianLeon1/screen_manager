@@ -1,2 +1,2 @@
 # screen_manager
-Screen manager selector with dmenu for multiple 
+Screen manager selector with dmenu for multiple monitors
