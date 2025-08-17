@@ -6,8 +6,8 @@
 import subprocess 
 import dmenu 
 
-def default_dmenu(optns: list[str], prompt: str):  
-    selected_option = dmenu.show(optns, font='Hack Nerd Font-12', background='#000000', foreground_selected='#000000', prompt=prompt, case_insensitive=True) 
+def default_dmenu(optns: list[str], prompt: str, lines = None):  
+    selected_option = dmenu.show(optns, font='Hack Nerd Font-12', background='#474747', foreground='#E0E0E0', foreground_selected='#0F0F0F', background_selected='#878787', prompt=prompt, case_insensitive=True, lines=lines) 
     return selected_option
 
 def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None: 
@@ -17,6 +17,41 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append('--off')
     subprocess.run(instruction) 
 
+def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], available_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
+    monitors = {} 
+    selected_optn= ''
+    for i, output in enumerate(connected_outputs):  
+        
+        optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'scale', 'save'] 
+        config_monitor = {'resolution': opt_resolution[output],
+                          'position': '--primary' if i == 0 else '',
+                          'orientation': 'normal', 
+                          'scale': '1x1',
+                          'status': 'on'}   
+        
+        while selected_optn != 'exit':  
+            selected_optn = default_dmenu(optns[1:] if i == 0 else optns, f'{connected_outputs[i]}: configuration') 
+
+            if selected_optn == 'status (ON / OFF)': 
+                config_monitor['status'] = 'off'
+                break
+            elif selected_optn == 'resolution':
+                config_monitor['resolution'] = default_dmenu(resolutions[connected_outputs[i]], 'Select resolution:', lines=5) 
+            elif selected_optn == 'position': 
+                position = default_dmenu(['primary','right of', 'left of', 'above', 'below'], 'Select position:') 
+                if position != 'primary': 
+                    temp_connected = connected_outputs[:] 
+                    temp_connected.pop(i)
+                    output_position = default_dmenu(temp_connected, 'Select in output for position:')
+
+                    config_monitor['position'] = f'--{position} {output_position}'
+                else: 
+                    config_monitor['position'] = '--primary' 
+            elif selected_optn == 'orientation': 
+                config_monitor['orientation'] = default_dmenu(['normal', 'left', 'right', 'inverted'], 'Select orientation:')  
+            elif selected_optn == 'status (ON/OFF)': 
+                config_monitor['status'] = 'off'
+                
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
 available_outputs = [line.split()[0] for line in xrandr_output if 'connected' in line]
 connected_outputs = [line.split()[0] for line in xrandr_output if ' connected' in line] 
@@ -84,25 +119,26 @@ if len(connected_outputs) == 1:
 
 if len(connected_outputs) == 2: 
     selected_option = default_dmenu(['Main Only', 
-                                     'Duplicate',
+                                     'Mirror',
                                      'Secondary Only', 
                                      'Dual Monitor',
                                      'Advanced'], 
                                     'Display settings: 2 Display connected') 
     
     # Main Only
-
-    if selected_option == 'Main Screen Only':  
+    if selected_option == 'Main Only':  
         instruction = ['xrandr', '--output', f'{connected_outputs[0]}', '--primary', '--mode', f'{opt_resolution[connected_outputs[0]]}', '--pos', '0x0', '--scale', '1x1', '--rotate', 'normal', '--output', f'{connected_outputs[1]}', '--off']  
         run_xrandr(instruction, disconnected_outputs)
         subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh']) # Change directory 
-
-    elif selected_option == 'Secondary Screen Only': 
-        instruction = ['xrandr', '--output', f'{connected_outputs[1]}', '--primary', '--mode', f'{opt_resolution[connected_outputs[1]]}', '--pos', '0x0', '--scale', '1x1', '--rotate', 'normal', '--output', f'{connected_outputs[1]}', '--off']  
-        run_xrandr(instruction, disconnected_outputs)
-        subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh']) # Change directory  
     
-    elif selected_option == 'Duplicate': 
+    # Secondary Only
+    elif selected_option == 'Secondary Only': 
+        instruction = ['xrandr', '--output', f'{connected_outputs[1]}', '--primary', '--mode', f'{opt_resolution[connected_outputs[1]]}', '--pos', '0x0', '--scale', '1x1', '--rotate', 'normal', '--output', f'{connected_outputs[0]}', '--off']  
+        run_xrandr(instruction, disconnected_outputs)
+        subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh']) # Change directory  
+    
+    # Mirror 
+    elif selected_option == 'Mirror': 
         principal_res = opt_resolution[connected_outputs[0]].split('x')
         second_res = opt_resolution[connected_outputs[1]].split('x') 
         scale = [round(int(second_res[0]) / int(principal_res[0]),3), round(int(second_res[1]) / int(principal_res[1]), 3)] 
@@ -117,7 +153,9 @@ if len(connected_outputs) == 2:
                        '--scale', f'{scale[0]}x{scale[1]}' if principal_res[0] < second_res[0] else '1x1', 
                        '--rotate', 'normal']
         run_xrandr(instruction, disconnected_outputs) 
-
+        subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh'])
+    
+    # Dual monitor
     elif selected_option == 'Dual Monitor': 
         instruction = ['xrandr', '--output', f'{connected_outputs[0]}', '--primary', 
                        '--mode', f'{opt_resolution[connected_outputs[0]]}', 
@@ -130,9 +168,10 @@ if len(connected_outputs) == 2:
                        '--scale', f'1x1', 
                        '--rotate', 'normal']  
         run_xrandr(instruction, disconnected_outputs)
+        subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
 
     elif selected_option == 'Advanced': 
-        pass 
+        advanced_config(connected_outputs,disconnected_outputs,available_outputs,resolutions,opt_resolution)
 
 # ---------------------------------------
 #
