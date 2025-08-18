@@ -18,6 +18,7 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
     subprocess.run(instruction) 
 
 def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], available_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
+    instruction =['xrandr']
     monitors = {} 
     selected_optn= ''
     for i, output in enumerate(connected_outputs):  
@@ -38,7 +39,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             elif selected_optn == 'resolution':
                 config_monitor['resolution'] = default_dmenu(resolutions[connected_outputs[i]], 'Select resolution:', lines=5) 
             elif selected_optn == 'position': 
-                position = default_dmenu(['primary','right of', 'left of', 'above', 'below'], 'Select position:') 
+                position = default_dmenu(['primary','right-of', 'left-of', 'above', 'below', 'same-as'], 'Select position:') 
                 if position != 'primary': 
                     temp_connected = connected_outputs[:] 
                     temp_connected.pop(i)
@@ -50,7 +51,23 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             elif selected_optn == 'orientation': 
                 config_monitor['orientation'] = default_dmenu(['normal', 'left', 'right', 'inverted'], 'Select orientation:')  
             elif selected_optn == 'status (ON/OFF)': 
-                config_monitor['status'] = 'off'
+                config_monitor['status'] = 'off' 
+            elif selected_optn == 'save': 
+                break # Falta agregar 
+    
+        monitors[output] = config_monitor 
+    
+    for i, output in connected_outputs: 
+
+        if monitors[output] == 'off': 
+            instruction.extend(['--output', output, '--off']) 
+            continue 
+
+        instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']])
+
+        if 'same-as' in monitors[output]['position']: 
+            pass 
+        
                 
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
 available_outputs = [line.split()[0] for line in xrandr_output if 'connected' in line]
