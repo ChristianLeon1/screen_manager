@@ -66,6 +66,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
         instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']])
 
         if 'same-as' in monitors[output]['position']: 
+        # buscar cual es el de menor opt_resolución 
             pass 
         
                 
