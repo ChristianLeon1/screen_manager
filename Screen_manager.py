@@ -62,10 +62,21 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     same_monitors = list(set(same_monitors))   
     if len(same_monitors) > 1: 
         for i in range(len(same_monitors) - 1): 
-            if monitors[same_monitors[i]]['resolution'].trim('x')[0] > monitors[same_monitors[i + 1]]['resolution'].trim('x')[0]: 
+            print(i)
+            if monitors[same_monitors[i]]['resolution'].split('x')[0] > monitors[same_monitors[i + 1]]['resolution'].split('x')[0]: 
                 aux = same_monitors[i]
                 same_monitors[i] = same_monitors[i + 1] 
                 same_monitors[i + 1] = aux  
+    
+        for i, output in enumerate(same_monitors):  
+            if i == 0: 
+                monitors[output]['scale'] = '1x1'
+                width, height = monitors[output]['resolution'].split('x')
+                width, height = int(width), int(height)
+                continue 
+            width_1, height_1 = monitors[output]['resolution'].split('x')
+            width_1, height_1 = int(width_1), int(height_1)
+            monitors[output]['scale'] = f'{round(width / width_1, 3)}x{round(height / height_1, 3)}'
     
     for i, output in connected_outputs: 
 
@@ -73,11 +84,16 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             instruction.extend(['--output', output, '--off']) 
             continue 
 
-        instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']])
+        instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
+        if len(monitors[output]['position'].split()) != 1: 
+            instruction.append(monitors[output]['position'])
+        else: 
+            instruction.extend([monitors[output]['position']])
 
-        if 'same-as' in monitors[output]['position']: 
-        
-                
+        instruction.extend(['--scale', monitors[output]['scale']])
+
+    print(instruction)
+
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
 available_outputs = [line.split()[0] for line in xrandr_output if 'connected' in line]
 connected_outputs = [line.split()[0] for line in xrandr_output if ' connected' in line] 
