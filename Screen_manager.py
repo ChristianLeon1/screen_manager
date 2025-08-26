@@ -47,7 +47,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
                     output_position = default_dmenu(temp_connected, 'Select in output for position:')
                     config_monitor['position'] = f'--{position} {output_position}'
                     if position == 'same-as': 
-                        same_monitors.extend([position, output_position])
+                        same_monitors.extend([output, output_position])
                 else: 
                     config_monitor['position'] = '--primary' 
             elif selected_optn == 'orientation': 
@@ -62,7 +62,6 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     same_monitors = list(set(same_monitors))   
     if len(same_monitors) > 1: 
         for i in range(len(same_monitors) - 1): 
-            print(i)
             if monitors[same_monitors[i]]['resolution'].split('x')[0] > monitors[same_monitors[i + 1]]['resolution'].split('x')[0]: 
                 aux = same_monitors[i]
                 same_monitors[i] = same_monitors[i + 1] 
@@ -78,7 +77,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             width_1, height_1 = int(width_1), int(height_1)
             monitors[output]['scale'] = f'{round(width / width_1, 3)}x{round(height / height_1, 3)}'
     
-    for i, output in connected_outputs: 
+    for output in connected_outputs: 
 
         if monitors[output] == 'off': 
             instruction.extend(['--output', output, '--off']) 
