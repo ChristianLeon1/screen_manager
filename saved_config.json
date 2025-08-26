@@ -1,0 +1,43 @@
+{
+    "hola": {
+        "monitors_config": {
+            "eDP-1": {
+                "resolution": "1920x1080",
+                "position": "--primary",
+                "orientation": "normal",
+                "scale": "0.833x0.833",
+                "status": "on"
+            },
+            "HDMI-2": {
+                "resolution": "1600x900",
+                "position": "--same-as eDP-1",
+                "orientation": "normal",
+                "scale": "1x1",
+                "status": "on"
+            }
+        },
+        "xrandr_instruction": [
+            "xrandr",
+            "--output",
+            "eDP-1",
+            "--primary",
+            "--mode",
+            "1920x1080",
+            "--rotate",
+            "normal",
+            "--primary",
+            "--scale",
+            "0.833x0.833",
+            "--output",
+            "HDMI-2",
+            "--same-as eDP-1",
+            "--mode",
+            "1600x900",
+            "--rotate",
+            "normal",
+            "--same-as eDP-1",
+            "--scale",
+            "1x1"
+        ]
+    }
+}

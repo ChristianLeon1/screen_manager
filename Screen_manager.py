@@ -5,8 +5,11 @@
 
 import subprocess 
 import dmenu 
+import json
+import os
 
 def default_dmenu(optns: list[str], prompt: str, lines = None):  
+    # Configuration of color and size for dmenu
     selected_option = dmenu.show(optns, font='Hack Nerd Font-12', background='#474747', foreground='#E0E0E0', foreground_selected='#0F0F0F', background_selected='#878787', prompt=prompt, case_insensitive=True, lines=lines) 
     return selected_option
 
@@ -17,7 +20,13 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append('--off')
     subprocess.run(instruction) 
 
-def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], available_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
+# -------------------------------------------
+#
+# Advanced configuration 
+#
+# -------------------------------------------
+
+def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
     instruction =['xrandr']
     monitors = {} 
     selected_optn= ''
@@ -89,9 +98,63 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
         else: 
             instruction.extend([monitors[output]['position']])
 
-        instruction.extend(['--scale', monitors[output]['scale']])
+        instruction.extend(['--scale', monitors[output]['scale']]) 
 
-    print(instruction)
+    save_option = default_dmenu(['yes', 'no'], 'Save configuration?')
+    if save_option == 'yes':
+        # Prompt for a unique name for this configuration
+        config_name = default_dmenu([], 'Enter a name for this configuration (e.g., home_dual_monitor):')
+        if config_name:
+            # Fixed filename for storing all configurations
+            filename = 'saved_config.json'
+            
+            # Load existing configurations or create an empty dictionary
+            if os.path.exists(filename) and os.path.getsize(filename) > 0:
+                try:
+                    with open(filename, 'r') as f:
+                        all_configs = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    # Handle cases where the file is empty or corrupted
+                    all_configs = {}
+            else:
+                all_configs = {}
+            
+            # Add the new configuration to the dictionary
+            all_configs[config_name] = {
+                'monitors_config': monitors,
+                'xrandr_instruction': instruction
+            }
+            
+            try:
+                # Save the updated dictionary back to the file
+                with open(filename, 'w') as f:
+                    json.dump(all_configs, f, indent=4)
+                print(f"Configuration '{config_name}' successfully saved to {filename}")
+            except Exception as e:
+                print(f"Error saving the file: {e}")
+        else:
+            print("No name provided. Configuration not saved.")
+
+
+    run_xrandr(instruction, disconnected_outputs) 
+
+    # polybar configuration change if different configuration 
+    if len(connected_outputs) == 1: 
+        subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh'])
+    elif len(connected_outputs) == 2: 
+        if len(same_monitors) != 0: 
+            subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
+        else: 
+            subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh']) 
+    elif len(connected_outputs) == 3: 
+            subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh'])   
+
+# --------------------------------------------------------
+#
+#   Main program 
+#
+# --------------------------------------------------------
+
 
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
 available_outputs = [line.split()[0] for line in xrandr_output if 'connected' in line]
@@ -150,7 +213,7 @@ if len(connected_outputs) == 1:
         subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh']) # Change directory 
 
     if selected_option == 'Advanced': 
-        pass 
+        advanced_config(connected_outputs, disconnected_outputs, resolutions, opt_resolution)
 
 # ---------------------------------------
 #
@@ -212,7 +275,7 @@ if len(connected_outputs) == 2:
         subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
 
     elif selected_option == 'Advanced': 
-        advanced_config(connected_outputs,disconnected_outputs,available_outputs,resolutions,opt_resolution)
+        advanced_config(connected_outputs,disconnected_outputs,resolutions,opt_resolution)
 
 # ---------------------------------------
 #
@@ -307,4 +370,4 @@ if len(connected_outputs) == 2:
             run_xrandr(instruction, disconnected_outputs)
 
         elif selected_option == 'Advanced':
-            pass
+            advanced_config(connected_outputs, disconnected_outputs, resolutions, opt_resolution)
