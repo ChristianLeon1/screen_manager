@@ -21,6 +21,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     instruction =['xrandr']
     monitors = {} 
     selected_optn= ''
+    same_monitors = []
     for i, output in enumerate(connected_outputs):  
         
         optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'scale', 'save'] 
@@ -39,13 +40,14 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             elif selected_optn == 'resolution':
                 config_monitor['resolution'] = default_dmenu(resolutions[connected_outputs[i]], 'Select resolution:', lines=5) 
             elif selected_optn == 'position': 
-                position = default_dmenu(['primary','right-of', 'left-of', 'above', 'below', 'same-as'], 'Select position:') 
+                position = default_dmenu(['primary','right-of', 'left-of', 'above', 'below', 'same-as'], 'Select position:')  
                 if position != 'primary': 
                     temp_connected = connected_outputs[:] 
                     temp_connected.pop(i)
                     output_position = default_dmenu(temp_connected, 'Select in output for position:')
-
                     config_monitor['position'] = f'--{position} {output_position}'
+                    if position == 'same-as': 
+                        same_monitors.extend([position, output_position])
                 else: 
                     config_monitor['position'] = '--primary' 
             elif selected_optn == 'orientation': 
@@ -57,6 +59,14 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     
         monitors[output] = config_monitor 
     
+    same_monitors = list(set(same_monitors))   
+    if len(same_monitors) > 1: 
+        for i in range(len(same_monitors) - 1): 
+            if monitors[same_monitors[i]]['resolution'].trim('x')[0] > monitors[same_monitors[i + 1]]['resolution'].trim('x')[0]: 
+                aux = same_monitors[i]
+                same_monitors[i] = same_monitors[i + 1] 
+                same_monitors[i + 1] = aux  
+    
     for i, output in connected_outputs: 
 
         if monitors[output] == 'off': 
@@ -66,8 +76,6 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
         instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']])
 
         if 'same-as' in monitors[output]['position']: 
-        # buscar cual es el de menor opt_resolución 
-            pass 
         
                 
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
