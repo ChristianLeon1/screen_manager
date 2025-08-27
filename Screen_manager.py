@@ -19,7 +19,7 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append(output) 
         instruction.append('--off')
     subprocess.run(instruction) 
-    subprocess.run(['feh', '--bg-fill', '~/Documentos/WallPapers/wall_gemini.jpeg']) # Update WallPaper 
+    subprocess.run(['feh', '--bg-fill', 'home/enigma/Documentos/WallPapers/wall_gemini.jpeg']) # Update WallPaper 
 
 def xrandr_instruction(configuration: dict[str, dict[str, str]]) -> list[str]: 
     instruction = ['xrandr'] 
