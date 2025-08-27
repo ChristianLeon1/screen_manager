@@ -44,8 +44,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             selected_optn = default_dmenu(optns[1:] if i == 0 else optns, f'{connected_outputs[i]}: configuration') 
 
             if selected_optn == 'status (ON / OFF)': 
-                config_monitor['status'] = 'off'
-                break
+                config_monitor['status'] = default_dmenu(['on','off'],'Select status:')
             elif selected_optn == 'resolution':
                 config_monitor['resolution'] = default_dmenu(resolutions[connected_outputs[i]], 'Select resolution:', lines=5) 
             elif selected_optn == 'position': 
@@ -61,8 +60,6 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
                     config_monitor['position'] = '--primary' 
             elif selected_optn == 'orientation': 
                 config_monitor['orientation'] = default_dmenu(['normal', 'left', 'right', 'inverted'], 'Select orientation:')  
-            elif selected_optn == 'status (ON/OFF)': 
-                config_monitor['status'] = 'off' 
             elif selected_optn == 'save': 
                 break
     
@@ -88,15 +85,15 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     
     for output in connected_outputs: 
 
-        if monitors[output] == 'off': 
+        if monitors[output]['status'] == 'off': 
             instruction.extend(['--output', output, '--off']) 
             continue 
 
-        instruction.extend(['--output', output, monitors[output]['position'], '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
-        if len(monitors[output]['position'].split()) != 1: 
+        instruction.extend(['--output', output, '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
+        if len(monitors[output]['position'].split()) == 1: 
             instruction.append(monitors[output]['position'])
         else: 
-            instruction.extend([monitors[output]['position']])
+            instruction.extend(monitors[output]['position'].split())
 
         instruction.extend(['--scale', monitors[output]['scale']]) 
 
@@ -104,7 +101,8 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     if save_option == 'yes':
         config_name = default_dmenu([], 'Enter a name for this configuration:')
         if config_name:
-            filename = 'saved_config.json'
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            filename = os.path.join(script_dir, 'saved_config.json')
             
             if os.path.exists(filename) and os.path.getsize(filename) > 0:
                 try:
@@ -122,20 +120,16 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             try:
                 with open(filename, 'w') as f:
                     json.dump(all_configs, f, indent=4)
-                print(f"Configuration '{config_name}' successfully saved to {filename}")
-            except Exception as e:
-                print(f"Error saving the file: {e}")
-        else:
-            print("No name provided. Configuration not saved.")
-
-
+            except Exception as e:  
+                pass
+    
     run_xrandr(instruction, disconnected_outputs) 
 
     # polybar configuration change if different configuration 
     if len(connected_outputs) == 1: 
         subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh'])
     elif len(connected_outputs) == 2: 
-        if len(same_monitors) != 0: 
+        if len(same_monitors) == 0: 
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
         else: 
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh']) 
@@ -147,7 +141,6 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
 #   Main program 
 #
 # --------------------------------------------------------
-
 
 xrandr_output = subprocess.run(['xrandr'], capture_output=True).stdout.decode().split('\n')
 available_outputs = [line.split()[0] for line in xrandr_output if 'connected' in line]
