@@ -33,7 +33,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     same_monitors = []
     for i, output in enumerate(connected_outputs):  
         
-        optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'scale', 'save'] 
+        optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'save'] 
         config_monitor = {'resolution': opt_resolution[output],
                           'position': '--primary' if i == 0 else '',
                           'orientation': 'normal', 
@@ -64,7 +64,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             elif selected_optn == 'status (ON/OFF)': 
                 config_monitor['status'] = 'off' 
             elif selected_optn == 'save': 
-                break # Falta agregar 
+                break
     
         monitors[output] = config_monitor 
     
@@ -102,31 +102,24 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
 
     save_option = default_dmenu(['yes', 'no'], 'Save configuration?')
     if save_option == 'yes':
-        # Prompt for a unique name for this configuration
-        config_name = default_dmenu([], 'Enter a name for this configuration (e.g., home_dual_monitor):')
+        config_name = default_dmenu([], 'Enter a name for this configuration:')
         if config_name:
-            # Fixed filename for storing all configurations
             filename = 'saved_config.json'
             
-            # Load existing configurations or create an empty dictionary
             if os.path.exists(filename) and os.path.getsize(filename) > 0:
                 try:
                     with open(filename, 'r') as f:
                         all_configs = json.load(f)
                 except (json.JSONDecodeError, IOError):
-                    # Handle cases where the file is empty or corrupted
                     all_configs = {}
             else:
                 all_configs = {}
             
-            # Add the new configuration to the dictionary
             all_configs[config_name] = {
                 'monitors_config': monitors,
-                'xrandr_instruction': instruction
             }
             
             try:
-                # Save the updated dictionary back to the file
                 with open(filename, 'w') as f:
                     json.dump(all_configs, f, indent=4)
                 print(f"Configuration '{config_name}' successfully saved to {filename}")
