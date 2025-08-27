@@ -19,6 +19,7 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append(output) 
         instruction.append('--off')
     subprocess.run(instruction) 
+    subprocess.run(['feh', '--bg-fill', '~/Documentos/WallPapers/wall_gemini.jpeg']) # Update WallPaper 
 
 def xrandr_instruction(configuration: dict[str, dict[str, str]]) -> list[str]: 
     instruction = ['xrandr'] 
@@ -74,7 +75,9 @@ def load_config():
     selected_config = all_configs.get(selected_name)
     if selected_config:
         instruction = xrandr_instruction(selected_config) 
-        run_xrandr(instruction, disconnected_outputs)
+        run_xrandr(instruction, disconnected_outputs) 
+        if selected_name == 'Escritorio Casa': 
+            subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
     else:
         print("Selected configuration not found in the file.")
         return None
@@ -271,7 +274,8 @@ if len(connected_outputs) == 2:
                                      'Mirror',
                                      'Secondary Only', 
                                      'Dual Monitor',
-                                     'Advanced'], 
+                                     'Advanced', 
+                                     'Saved Configuration'], 
                                     'Display settings: 2 Display connected') 
     
     # Main Only
@@ -321,6 +325,9 @@ if len(connected_outputs) == 2:
 
     elif selected_option == 'Advanced': 
         advanced_config(connected_outputs,disconnected_outputs,resolutions,opt_resolution)
+
+    elif selected_option == 'Saved Configuration': 
+        load_config() 
 
 # ---------------------------------------
 #
