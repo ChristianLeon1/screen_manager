@@ -19,6 +19,68 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append(output) 
         instruction.append('--off')
     subprocess.run(instruction) 
+    subprocess.run(['feh', '--bg-fill', '~/Documentos/WallPapers/wall_gemini.jpeg']) # Update WallPaper 
+
+def xrandr_instruction(configuration: dict[str, dict[str, str]]) -> list[str]: 
+    instruction = ['xrandr'] 
+    for output in configuration.keys(): 
+        if configuration[output]['status'] == 'off': 
+            instruction.extend(['--output', output, '--off']) 
+            continue
+        instruction.extend(['--output', output, '--mode', configuration[output]['resolution'], '--rotate', configuration[output]['orientation']]) 
+        if len(configuration[output]['position'].split()) == 1: 
+            instruction.append(configuration[output]['position'])
+        else: 
+            instruction.extend(configuration[output]['position'].split())
+
+        instruction.extend(['--scale', configuration[output]['scale']]) 
+
+    return instruction
+
+# -------------------------------------------
+#
+# Load configuration json
+#
+# -------------------------------------------
+
+def load_config():
+    """
+    Loads a saved configuration from the 'saved_config.json' file,
+    presents a list of available configurations to the user via dmenu,
+    and returns the selected configuration's xrandr instruction.
+    """
+
+    filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_config.json')
+
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    try:
+        with open(filename, 'r') as f:
+            all_configs = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    config_names = list(all_configs.keys())
+    if not config_names:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    # Use dmenu to let the user choose a configuration
+    selected_name = default_dmenu(config_names, 'Select a configuration to load:')
+    
+    # Get the xrandr instruction for the selected configuration
+    selected_config = all_configs.get(selected_name)
+    if selected_config:
+        instruction = xrandr_instruction(selected_config) 
+        run_xrandr(instruction, disconnected_outputs) 
+        if selected_name == 'Escritorio Casa': 
+            subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_2.sh'])
+    else:
+        print("Selected configuration not found in the file.")
+        return None
 
 # -------------------------------------------
 #
@@ -27,7 +89,18 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
 # -------------------------------------------
 
 def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
-    instruction =['xrandr']
+
+    """
+    Constructs an xrandr command interactively for monitor configuration
+    and provides an option to save the configuration to a JSON file.
+
+    Args:
+        connected_outputs (list[str]): List of currently connected outputs.
+        disconnected_outputs (list[str]): List of currently disconnected outputs.
+        resolutions (dict[str, list[str]]): Dictionary mapping outputs to their available resolutions.
+        opt_resolution (dict[str, str]): Dictionary mapping outputs to their optimal resolution.
+    """
+
     monitors = {} 
     selected_optn= ''
     same_monitors = []
@@ -65,6 +138,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     
         monitors[output] = config_monitor 
     
+    # Compare if was selected the option same_monitor
     same_monitors = list(set(same_monitors))   
     if len(same_monitors) > 1: 
         for i in range(len(same_monitors) - 1): 
@@ -83,20 +157,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             width_1, height_1 = int(width_1), int(height_1)
             monitors[output]['scale'] = f'{round(width / width_1, 3)}x{round(height / height_1, 3)}'
     
-    for output in connected_outputs: 
-
-        if monitors[output]['status'] == 'off': 
-            instruction.extend(['--output', output, '--off']) 
-            continue 
-
-        instruction.extend(['--output', output, '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
-        if len(monitors[output]['position'].split()) == 1: 
-            instruction.append(monitors[output]['position'])
-        else: 
-            instruction.extend(monitors[output]['position'].split())
-
-        instruction.extend(['--scale', monitors[output]['scale']]) 
-
+    # save configuration in a json file
     save_option = default_dmenu(['yes', 'no'], 'Save configuration?')
     if save_option == 'yes':
         config_name = default_dmenu([], 'Enter a name for this configuration:')
@@ -113,9 +174,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             else:
                 all_configs = {}
             
-            all_configs[config_name] = {
-                'monitors_config': monitors,
-            }
+            all_configs[config_name] = monitors
             
             try:
                 with open(filename, 'w') as f:
@@ -123,6 +182,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             except Exception as e:  
                 pass
     
+    instruction = xrandr_instruction(monitors) 
     run_xrandr(instruction, disconnected_outputs) 
 
     # polybar configuration change if different configuration 
@@ -135,6 +195,8 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh']) 
     elif len(connected_outputs) == 3: 
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh'])   
+    
+    return None 
 
 # --------------------------------------------------------
 #
@@ -212,7 +274,8 @@ if len(connected_outputs) == 2:
                                      'Mirror',
                                      'Secondary Only', 
                                      'Dual Monitor',
-                                     'Advanced'], 
+                                     'Advanced', 
+                                     'Saved Configuration'], 
                                     'Display settings: 2 Display connected') 
     
     # Main Only
@@ -262,6 +325,9 @@ if len(connected_outputs) == 2:
 
     elif selected_option == 'Advanced': 
         advanced_config(connected_outputs,disconnected_outputs,resolutions,opt_resolution)
+
+    elif selected_option == 'Saved Configuration': 
+        load_config() 
 
 # ---------------------------------------
 #
