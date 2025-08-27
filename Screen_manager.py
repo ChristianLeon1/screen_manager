@@ -106,7 +106,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     same_monitors = []
     for i, output in enumerate(connected_outputs):  
         
-        optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'save'] 
+        optns = ['status (ON / OFF)', 'resolution', 'position', 'orientation', 'save', 'exit'] 
         config_monitor = {'resolution': opt_resolution[output],
                           'position': '--primary' if i == 0 else '',
                           'orientation': 'normal', 
@@ -135,18 +135,16 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
                 config_monitor['orientation'] = default_dmenu(['normal', 'left', 'right', 'inverted'], 'Select orientation:')  
             elif selected_optn == 'save': 
                 break
+            elif selected_optn == 'exit':
+                return None 
     
         monitors[output] = config_monitor 
     
     # Compare if was selected the option same_monitor
     same_monitors = list(set(same_monitors))   
     if len(same_monitors) > 1: 
-        for i in range(len(same_monitors) - 1): 
-            if monitors[same_monitors[i]]['resolution'].split('x')[0] > monitors[same_monitors[i + 1]]['resolution'].split('x')[0]: 
-                aux = same_monitors[i]
-                same_monitors[i] = same_monitors[i + 1] 
-                same_monitors[i + 1] = aux  
-    
+        same_monitors.sort(key=lambda m: int(monitors[m]['resolution'].split('x')[0]), reverse=False)    
+
         for i, output in enumerate(same_monitors):  
             if i == 0: 
                 monitors[output]['scale'] = '1x1'
