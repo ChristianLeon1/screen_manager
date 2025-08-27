@@ -20,6 +20,77 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append('--off')
     subprocess.run(instruction) 
 
+def xrandr_instruction(configuration: dict[str, dict[str, str]], disconnected_outputs: list[str]) -> list[str]: 
+    instruction = ['xrandr'] 
+    for output in configuration.keys(): 
+        if configuration[output]['status'] == 'off': 
+            instruction.extend(['--output', output, '--off']) 
+            continue
+
+        instruction.extend(['--output', output, '--mode', configuration[output]['resolution'], '--rotate', configuration[output]['orientation']]) 
+        if len(configuration[output]['position'].split()) == 1: 
+            instruction.append(configuration[output]['position'])
+        else: 
+            instruction.extend(configuration[output]['position'].split())
+
+        instruction.extend(['--scale', configuration[output]['scale']]) 
+
+    return instruction
+
+# -------------------------------------------
+#
+# Load configuration json
+#
+# -------------------------------------------
+
+def load_config():
+    """
+    Loads a saved configuration from the 'saved_config.json' file,
+    presents a list of available configurations to the user via dmenu,
+    and returns the selected configuration's xrandr instruction.
+    """
+
+    filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_config.json')
+
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    try:
+        with open(filename, 'r') as f:
+            all_configs = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    config_names = list(all_configs.keys())
+    if not config_names:
+        default_dmenu(['exit'], 'No configurations saved in the file.')
+        return None
+
+    # Use dmenu to let the user choose a configuration
+    selected_name = default_dmenu(config_names, 'Select a configuration to load:')
+    
+    # Get the xrandr instruction for the selected configuration
+    selected_config = all_configs.get(selected_name)
+    if selected_config:
+        xrandr_instruction = selected_config.get('xrandr_instruction')
+        if xrandr_instruction:
+            print(f"Applying configuration: {selected_name}")
+            print(f"Executing command: {' '.join(xrandr_instruction)}")
+            # Apply the configuration using subprocess.run
+            try:
+                subprocess.run(xrandr_instruction, check=True)
+                print("Configuration applied successfully.")
+            except subprocess.CalledProcessError as e:
+                print(f"Error executing xrandr command: {e}")
+            except FileNotFoundError:
+                print("xrandr command not found. Make sure it is installed and in your PATH.")
+            return xrandr_instruction
+    else:
+        print("Selected configuration not found in the file.")
+        return None
+
 # -------------------------------------------
 #
 # Advanced configuration 
@@ -27,6 +98,18 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
 # -------------------------------------------
 
 def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str], resolutions: dict[str, list[str]], opt_resolution: dict[str, str]) -> None: 
+
+    """
+    Constructs an xrandr command interactively for monitor configuration
+    and provides an option to save the configuration to a JSON file.
+
+    Args:
+        connected_outputs (list[str]): List of currently connected outputs.
+        disconnected_outputs (list[str]): List of currently disconnected outputs.
+        resolutions (dict[str, list[str]]): Dictionary mapping outputs to their available resolutions.
+        opt_resolution (dict[str, str]): Dictionary mapping outputs to their optimal resolution.
+    """
+
     instruction =['xrandr']
     monitors = {} 
     selected_optn= ''
@@ -83,19 +166,21 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             width_1, height_1 = int(width_1), int(height_1)
             monitors[output]['scale'] = f'{round(width / width_1, 3)}x{round(height / height_1, 3)}'
     
-    for output in connected_outputs: 
+    #xrandr_instruction
 
-        if monitors[output]['status'] == 'off': 
-            instruction.extend(['--output', output, '--off']) 
-            continue 
+    # for output in connected_outputs: 
 
-        instruction.extend(['--output', output, '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
-        if len(monitors[output]['position'].split()) == 1: 
-            instruction.append(monitors[output]['position'])
-        else: 
-            instruction.extend(monitors[output]['position'].split())
+        # if monitors[output]['status'] == 'off': 
+        #     
+        #     continue 
 
-        instruction.extend(['--scale', monitors[output]['scale']]) 
+        # instruction.extend(['--output', output, '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
+        # if len(monitors[output]['position'].split()) == 1: 
+        #     instruction.append(monitors[output]['position'])
+        # else: 
+        #     instruction.extend(monitors[output]['position'].split())
+        #
+        # instruction.extend(['--scale', monitors[output]['scale']]) 
 
     save_option = default_dmenu(['yes', 'no'], 'Save configuration?')
     if save_option == 'yes':
