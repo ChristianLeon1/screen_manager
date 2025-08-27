@@ -20,13 +20,12 @@ def run_xrandr(instruction: list[str], disconnected_outputs: list[str]) -> None:
         instruction.append('--off')
     subprocess.run(instruction) 
 
-def xrandr_instruction(configuration: dict[str, dict[str, str]], disconnected_outputs: list[str]) -> list[str]: 
+def xrandr_instruction(configuration: dict[str, dict[str, str]]) -> list[str]: 
     instruction = ['xrandr'] 
     for output in configuration.keys(): 
         if configuration[output]['status'] == 'off': 
             instruction.extend(['--output', output, '--off']) 
             continue
-
         instruction.extend(['--output', output, '--mode', configuration[output]['resolution'], '--rotate', configuration[output]['orientation']]) 
         if len(configuration[output]['position'].split()) == 1: 
             instruction.append(configuration[output]['position'])
@@ -74,19 +73,8 @@ def load_config():
     # Get the xrandr instruction for the selected configuration
     selected_config = all_configs.get(selected_name)
     if selected_config:
-        xrandr_instruction = selected_config.get('xrandr_instruction')
-        if xrandr_instruction:
-            print(f"Applying configuration: {selected_name}")
-            print(f"Executing command: {' '.join(xrandr_instruction)}")
-            # Apply the configuration using subprocess.run
-            try:
-                subprocess.run(xrandr_instruction, check=True)
-                print("Configuration applied successfully.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error executing xrandr command: {e}")
-            except FileNotFoundError:
-                print("xrandr command not found. Make sure it is installed and in your PATH.")
-            return xrandr_instruction
+        instruction = xrandr_instruction(selected_config) 
+        run_xrandr(instruction, disconnected_outputs)
     else:
         print("Selected configuration not found in the file.")
         return None
@@ -110,7 +98,6 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
         opt_resolution (dict[str, str]): Dictionary mapping outputs to their optimal resolution.
     """
 
-    instruction =['xrandr']
     monitors = {} 
     selected_optn= ''
     same_monitors = []
@@ -148,6 +135,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
     
         monitors[output] = config_monitor 
     
+    # Compare if was selected the option same_monitor
     same_monitors = list(set(same_monitors))   
     if len(same_monitors) > 1: 
         for i in range(len(same_monitors) - 1): 
@@ -166,22 +154,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             width_1, height_1 = int(width_1), int(height_1)
             monitors[output]['scale'] = f'{round(width / width_1, 3)}x{round(height / height_1, 3)}'
     
-    #xrandr_instruction
-
-    # for output in connected_outputs: 
-
-        # if monitors[output]['status'] == 'off': 
-        #     
-        #     continue 
-
-        # instruction.extend(['--output', output, '--mode', monitors[output]['resolution'], '--rotate', monitors[output]['orientation']]) 
-        # if len(monitors[output]['position'].split()) == 1: 
-        #     instruction.append(monitors[output]['position'])
-        # else: 
-        #     instruction.extend(monitors[output]['position'].split())
-        #
-        # instruction.extend(['--scale', monitors[output]['scale']]) 
-
+    # save configuration in a json file
     save_option = default_dmenu(['yes', 'no'], 'Save configuration?')
     if save_option == 'yes':
         config_name = default_dmenu([], 'Enter a name for this configuration:')
@@ -198,9 +171,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             else:
                 all_configs = {}
             
-            all_configs[config_name] = {
-                'monitors_config': monitors,
-            }
+            all_configs[config_name] = monitors
             
             try:
                 with open(filename, 'w') as f:
@@ -208,6 +179,7 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             except Exception as e:  
                 pass
     
+    instruction = xrandr_instruction(monitors) 
     run_xrandr(instruction, disconnected_outputs) 
 
     # polybar configuration change if different configuration 
@@ -220,6 +192,8 @@ def advanced_config(connected_outputs: list[str], disconnected_outputs: list[str
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh']) 
     elif len(connected_outputs) == 3: 
             subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch_3.sh'])   
+    
+    return None 
 
 # --------------------------------------------------------
 #
