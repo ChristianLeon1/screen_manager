@@ -253,15 +253,18 @@ for output in connected_outputs:
 # ---------------------------------------
 
 if len(connected_outputs) == 1: 
-    selected_option = default_dmenu(['Normal', 'Advanced'], 'Display settings: 1 Display connected') 
+    selected_option = default_dmenu(['Normal', 'Advanced', 'Saved Configuration'], 'Display settings: 1 Display connected') 
 
     if selected_option == 'Normal': 
         instruction = ['xrandr', '--output', f'{connected_outputs[0]}', '--primary', '--mode', f'{opt_resolution[connected_outputs[0]]}', '--pos', '0x0', '--scale', '1x1', '--rotate', 'normal']  
         run_xrandr(instruction,disconnected_outputs)
         subprocess.run(['bash', '/home/enigma/.config/polybar/colorblocks/launch.sh']) # Change directory 
 
-    if selected_option == 'Advanced': 
+    elif selected_option == 'Advanced': 
         advanced_config(connected_outputs, disconnected_outputs, resolutions, opt_resolution)
+
+    elif selected_option == 'Saved Configuration': 
+        load_config() 
 
 # ---------------------------------------
 #
@@ -342,7 +345,8 @@ if len(connected_outputs) == 2:
                                          'Secondary & Tertiary',
                                          'Duplicate Main',
                                          'Triple Monitor',
-                                         'Advanced'],
+                                         'Advanced', 
+                                         'Saved Configuration'],
                                          'Display settings: 3 Displays connected')
 
         # Main Screen Only (first monitor active)
@@ -422,4 +426,8 @@ if len(connected_outputs) == 2:
             run_xrandr(instruction, disconnected_outputs)
 
         elif selected_option == 'Advanced':
-            advanced_config(connected_outputs, disconnected_outputs, resolutions, opt_resolution)
+            advanced_config(connected_outputs, disconnected_outputs, resolutions, opt_resolution) 
+
+        elif selected_option == 'Saved Configuration': 
+            load_config() 
+
