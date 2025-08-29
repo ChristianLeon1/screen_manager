@@ -1,10 +1,9 @@
-## **Monitor Setup** 💻
+# Monitor Setup
 
 Monitor Setup is a Python script that simplifies the management of multiple monitors in Linux desktop environments. It uses `dmenu` for an interactive user interface and `xrandr` for screen configuration. It's ideal for users who need to quickly switch between different monitor setups, such as using a single monitor, extending the desktop across multiple screens, or duplicating the display.
 
----
 
-## Key Features 🚀
+## Key Features 
 
 * **Automatic Detection**: Automatically detects connected and disconnected displays to offer relevant configuration options.
 * **Preset Modes**: Provides common configurations with a single click:
@@ -16,8 +15,6 @@ Monitor Setup is a Python script that simplifies the management of multiple moni
 * **Polybar Integration**: The script is configured to automatically change the Polybar setup based on the number of connected monitors, ensuring your status bar adjusts correctly to the new layout.
 * **Dynamic Wallpaper**: Automatically changes the wallpaper with `feh` after each monitor adjustment.
 
----
-
 ## Requirements 📋
 
 * **`python3`**: The Python interpreter.
@@ -26,16 +23,12 @@ Monitor Setup is a Python script that simplifies the management of multiple moni
 * **`feh`**: An image viewer used to set the wallpaper.
 * **`polybar`** (optional): If you want the status bar to adjust automatically, ensure you have Polybar installed with the correct configurations in the paths specified in the code.
 
----
-
 ## Usage 💻
 
 1.  Make sure `dmenu` and `xrandr` are installed on your system.
 2.  Place the `monitor-setup.py` script and the `saved_config.json` file (if you have one) in the same directory.
 3.  Make the script executable: `chmod +x monitor-setup.py`
 4.  Run the script from your terminal or set it up as a keyboard shortcut in your window manager (e.g., i3, dwm, etc.): `python3 /path/to/monitor-setup.py`.
-
----
 
 ## Configuration File ⚙️
 
