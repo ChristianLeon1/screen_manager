@@ -15,7 +15,7 @@ Monitor Setup is a Python script that simplifies the management of multiple moni
 * **Polybar Integration**: The script is configured to automatically change the Polybar setup based on the number of connected monitors, ensuring your status bar adjusts correctly to the new layout.
 * **Dynamic Wallpaper**: Automatically changes the wallpaper with `feh` after each monitor adjustment.
 
-## Requirements 📋
+## Requirements
 
 * **`python3`**: The Python interpreter.
 * **`dmenu`**: A simple and fast application launcher. The script uses `dmenu` for its interactive user interface.
@@ -23,7 +23,7 @@ Monitor Setup is a Python script that simplifies the management of multiple moni
 * **`feh`**: An image viewer used to set the wallpaper.
 * **`polybar`** (optional): If you want the status bar to adjust automatically, ensure you have Polybar installed with the correct configurations in the paths specified in the code.
 
-## Usage 💻
+## Usage
 
 1.  Make sure `dmenu` and `xrandr` are installed on your system.
 2.  Place the `monitor-setup.py` script and the `saved_config.json` file (if you have one) in the same directory.
